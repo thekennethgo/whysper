@@ -7,16 +7,13 @@ import { supabase } from '@/lib/supabase'
 import { JoinRoomModal } from '@/components/JoinRoomModal';
 
 export default function JoinRoom() {
+
   const [ rooms, setRooms ] = useState([]);
   const [ isLoading, setIsLoading ] = useState(false);
   const [ error, setError ] = useState('');
 
   const [ selectedRoom, setSelectedRoom ] = useState(null);
   const [ isModalOpen, setIsModalOpen ] = useState(false);
-
-  const handleJoinRoom = async (room, password) => {
-    console.log('Joining room:', room.room_name, 'with password:', password);
-  };
 
   useEffect(() => {
     fetchRooms();
@@ -49,8 +46,8 @@ export default function JoinRoom() {
       setIsLoading(true);
 
       const { data, error } = await supabase
-        .from('rooms')
-        .select('id, room_name, creator_name, description, created_at, is_active')
+        .from('room_info')
+        .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -65,10 +62,11 @@ export default function JoinRoom() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="max-w-4xl mx-auto px-4 py-4">
-        <Link href="/">
-          <Button>Back to Home</Button>
-        </Link>
+      <div className="bg-white border-b px-8 py-4 flex justify-between items-center">
+        <h1 className="text-xl font-bold">Join a room</h1>
+        <button onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700">
+          Return to Home
+        </button>
       </div>
 
       <div className="max-w-xl mx-auto px-4 py-8">
@@ -117,7 +115,6 @@ export default function JoinRoom() {
           setIsModalOpen(false);
           setSelectedRoom(null);
         }}
-        onJoin={handleJoinRoom}
       />
     </div>
   );

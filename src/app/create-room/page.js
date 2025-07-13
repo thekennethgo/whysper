@@ -63,9 +63,9 @@ export default function CreateRoom() {
         }
         throw error;
       }
-
-      alert(`Room "${formData.roomName}" created successfully!`);
-      router.push('/')
+      
+      sessionStorage.setItem('chat_username', data[0].creator_name);
+      router.push(`/room/${data[0].id}?`)
     } catch (error) {
       setError(error.message);
     } finally {
@@ -83,15 +83,15 @@ export default function CreateRoom() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <Link href="/">
-        <Button>Return to Home</Button>
-      </Link>
+      <div className="bg-white border-b px-8 py-4 flex justify-between items-center">
+        <h1 className="text-xl font-bold">Create a Private Room</h1>
+        <button onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700">
+          Return to Home
+        </button>
+      </div>
 
       <div className="max-w-2xl mx-auto px-4 py-8">
         <Card>
-          <CardHeader>
-            <CardTitle>Create Room</CardTitle>
-          </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (

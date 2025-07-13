@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useRouter } from 'next/navigation';
+
 import {
   Dialog,
   DialogContent,
@@ -13,9 +15,11 @@ import {
 import { supabase } from '@/lib/supabase';
 
 export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const router = useRouter();
+  const [ username, setUsername ] = useState('');
+  const [ password, setPassword ] = useState('');
+  const [ isLoading, setIsLoading ] = useState(false);
+  const [ error, setError ] = useState('');
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -49,7 +53,8 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
       if (error) throw error;
   
       if (data) {
-        await onJoin(room, password);
+        sessionStorage.setItem('chat_username', username);
+        router.push(`/room/${room.id}`)
         onClose();
       } else {
         setError('Incorrect password');
@@ -89,6 +94,17 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
                 {error}
               </div>
             )}
+
+            <div className="space-y-2">
+              <Input
+                type="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter display name"
+                required
+                autoFocus
+              />
+            </div>
 
             <div className="space-y-2">
               <Input
