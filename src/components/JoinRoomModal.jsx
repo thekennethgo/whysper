@@ -1,0 +1,116 @@
+'use client';
+import { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from "@/components/ui/dialog";
+
+import { supabase } from '@/lib/supabase';
+
+export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!password.trim()) {
+      setError('Please enter the password');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase
+        .rpc('verify_room_password', {
+          room_id: room.id,
+          input_password: password
+        });
+  
+      if (error) throw error;
+  
+      if (data) {
+        await onJoin(room, password);
+        onClose();
+      } else {
+        setError('Incorrect password');
+      }
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+      setPassword('');
+    }
+  };
+
+  const handleClose = () => {
+    setPassword('');
+    setError('');
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{room?.room_name}</DialogTitle>
+          <DialogDescription>
+            Created by {room?.creator_name} • {room && formatDate(room.created_at)}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <p>
+            {room && room.description}
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                required
+                autoFocus
+              />
+            </div>
+
+            <Button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? 'Joining...' : 'Join Room'}
+            </Button>
+          </form>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
