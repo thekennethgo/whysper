@@ -1,54 +1,88 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from '@/lib/supabase';
 
 export default function CreateRoom() {
+  const router = useRouter();
+
   const [formData, setFormData] = useState({
     roomName: '',
+    creatorName: '',
+    description: '',
     password: '',
     description: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     
     if (!formData.roomName.trim()) {
-      alert('Please enter a room name');
+      setError('Please enter a room name');
+      return;
+    }
+
+    if (!formData.creatorName.trim()) {
+      setError('Please enter your name');
       return;
     }
     
     if (formData.password.length < 4) {
-      alert('Password must be at least 4 characters');
+      setError('Password must be at least 4 characters');
       return;
     }
 
     setIsLoading(true);
     
-    console.log('Creating room:', formData);
-    
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase
+        .from('rooms')
+        .insert([
+          {
+            room_name: formData.roomName.trim(),
+            creator_name: formData.creatorName.trim(),
+            description: formData.description.trim(),
+            password: formData.password,
+            is_active: true
+          }
+        ])
+        .select();
+
+      if (error) {
+        if (error.code === '23505') {
+          throw new Error('Room name already exists. Please choose a different name.');
+        }
+        throw error;
+      }
+
+      alert(`Room "${formData.roomName}" created successfully!`);
+      router.push('/')
+    } catch (error) {
+      setError(error.message);
+    } finally {
       setIsLoading(false);
-      alert('Room created successfully! (This is a placeholder)');
-    }, 1000);
+    }
   };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
     }));
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-
       <Link href="/">
         <Button>Return to Home</Button>
       </Link>
@@ -60,6 +94,12 @@ export default function CreateRoom() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div>
+                  {error}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="roomName">Room Name *</Label>
                 <Input
@@ -68,6 +108,18 @@ export default function CreateRoom() {
                   value={formData.roomName}
                   onChange={handleChange}
                   placeholder="Enter room name"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="roomName">Display Name *</Label>
+                <Input
+                  id="creatorName"
+                  name="creatorName"
+                  value={formData.creatorName}
+                  onChange={handleChange}
+                  placeholder="Enter your name"
                   required
                 />
               </div>
