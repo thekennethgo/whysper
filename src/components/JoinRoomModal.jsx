@@ -53,7 +53,10 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
       if (error) throw error;
   
       if (data) {
-        sessionStorage.setItem('chat_username', username);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('chat_username', username);
+          localStorage.setItem('chat_username', username);
+        }        
         router.push(`/room/${room.id}`)
         onClose();
       } else {

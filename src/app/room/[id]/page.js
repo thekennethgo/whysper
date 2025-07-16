@@ -9,7 +9,11 @@ export default function RoomPage() {
   const router = useRouter();
   const roomId = params.id;
 
-  const username = sessionStorage.getItem('chat_username');
+  let username = '';
+  if (typeof window !== 'undefined') {
+    username = sessionStorage.getItem('chat_username') || localStorage.getItem('chat_username') || '';
+  }
+  
   const [room, setRoom] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');

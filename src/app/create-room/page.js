@@ -1,13 +1,11 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from '@/lib/supabase';
 
 export default function CreateRoom() {
   const router = useRouter();
@@ -63,7 +61,10 @@ export default function CreateRoom() {
       return;
     }
     
-    sessionStorage.setItem('chat_username', json.room.creator_name);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('chat_username', formData.creatorName);
+      localStorage.setItem('chat_username', formData.creatorName);
+    }        
     router.push(`/room/${json.room.id}`);
   };
 

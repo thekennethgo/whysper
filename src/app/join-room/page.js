@@ -5,8 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { supabase } from '@/lib/supabase'
 import { JoinRoomModal } from '@/components/JoinRoomModal';
+import { useRouter } from 'next/navigation';
 
 export default function JoinRoom() {
+  const router = useRouter();
 
   const [ rooms, setRooms ] = useState([]);
   const [ isLoading, setIsLoading ] = useState(false);
