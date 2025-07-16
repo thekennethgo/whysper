@@ -42,35 +42,29 @@ export default function CreateRoom() {
     }
 
     setIsLoading(true);
-    
-    try {
-      const { data, error } = await supabase
-        .from('rooms')
-        .insert([
-          {
-            room_name: formData.roomName.trim(),
-            creator_name: formData.creatorName.trim(),
-            description: formData.description.trim(),
-            password: formData.password,
-            is_active: true
-          }
-        ])
-        .select();
 
-      if (error) {
-        if (error.code === '23505') {
-          throw new Error('Room name already exists. Please choose a different name.');
-        }
-        throw error;
-      }
-      
-      sessionStorage.setItem('chat_username', data[0].creator_name);
-      router.push(`/room/${data[0].id}?`)
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
+    const res = await fetch('/api/create-room', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        roomName: formData.roomName,
+        creatorName: formData.creatorName,
+        description: formData.description,
+        password: formData.password,
+      }),
+    });
+    
+    const json = await res.json();
+
+    setIsLoading(false);
+
+    if (!res.ok) {
+      setError(json.error || 'Something went wrong');
+      return;
     }
+    
+    sessionStorage.setItem('chat_username', json.room.creator_name);
+    router.push(`/room/${json.room.id}`);
   };
 
   const handleChange = (e) => {
@@ -95,7 +89,7 @@ export default function CreateRoom() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div>
+                <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded text-sm">
                   {error}
                 </div>
               )}
