@@ -53,10 +53,15 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
       if (error) throw error;
   
       if (data) {
+        await supabase
+        .from('rooms')
+        .update({ is_locked: true })
+        .eq('id', room.id);
+
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('chat_username', username);
           localStorage.setItem('chat_username', username);
-        }        
+        }
         router.push(`/room/${room.id}`)
         onClose();
       } else {

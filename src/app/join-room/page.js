@@ -51,6 +51,7 @@ export default function JoinRoom() {
         .from('room_info')
         .select('*')
         .eq('is_active', true)
+        .eq('is_locked', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
