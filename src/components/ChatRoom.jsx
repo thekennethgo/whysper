@@ -6,6 +6,7 @@ import ably from '@/lib/ably';
 export function ChatRoom({ room, username }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [canSend, setCanSend] = useState(false);
   const channelRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -65,6 +66,13 @@ export function ChatRoom({ room, username }) {
         })}
         <div ref={messagesEndRef} />
       </div>
+      
+      {!canSend && (
+        <div className="text-center text-gray-500 my-4">
+          Waiting for your partner...
+        </div>
+      )}
+      
       <form
         onSubmit={sendMessage}
         className="flex items-center gap-2 mt-2 p-2 bg-white rounded"

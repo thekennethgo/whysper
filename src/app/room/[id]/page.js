@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ChatRoom } from '@/components/ChatRoom';
+import { Button } from "@/components/ui/button";
 
 export default function RoomPage() {
   const params = useParams();
@@ -13,7 +14,7 @@ export default function RoomPage() {
   if (typeof window !== 'undefined') {
     username = sessionStorage.getItem('chat_username') || localStorage.getItem('chat_username') || '';
   }
-  
+
   const [room, setRoom] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,7 +24,7 @@ export default function RoomPage() {
       try {
         const { data, error } = await supabase
           .from('room_info')
-          .select('*')
+          .select('id, room_name, creator_name')
           .eq('id', roomId)
           .eq('is_active', true)
           .single();
@@ -40,6 +41,13 @@ export default function RoomPage() {
 
     fetchRoom();
   }, [roomId]);
+
+  const endChat = async () => {
+    // Deletes the chat
+
+    router.push('/');
+  }
+
 
   if (isLoading) {
     return (
@@ -71,10 +79,10 @@ export default function RoomPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
       <div className="bg-white border-b px-8 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">Chat Room</h1>
-        <button onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700">
-          Return to Home
-        </button>
+        <h1 className="text-xl font-bold">{room.room_name}</h1>
+        <Button onClick={endChat} variant="destructive">
+          End Chat
+        </Button>
       </div>
 
       <ChatRoom room={room} username={username} />

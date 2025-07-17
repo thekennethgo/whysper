@@ -21,6 +21,7 @@ export async function POST(req) {
       description: description.trim(),
       password,
       is_active: true,
+      is_locked: false,
     })
     .select();
 
