@@ -42,13 +42,6 @@ export default function RoomPage() {
     fetchRoom();
   }, [roomId]);
 
-  const endChat = async () => {
-    // Deletes the chat
-
-    router.push('/');
-  }
-
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -78,14 +71,7 @@ export default function RoomPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
-      <div className="bg-white border-b px-8 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">{room.room_name}</h1>
-        <Button onClick={endChat} variant="destructive">
-          End Chat
-        </Button>
-      </div>
-
-      <ChatRoom room={room} username={username} />
+      <ChatRoom room={room} username={username}/>
     </div>
   );
 }
