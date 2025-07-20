@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AblyClient from '@/lib/ably';
 import { Button } from "@/components/ui/button";
 import { encryptMessage, decryptMessage, getPrivateKey } from '@/lib/encryption';
+import MessageBubble from './MessageBubble';
 
 export function ChatRoom({room, username}) {
   const router = useRouter();
@@ -41,11 +42,11 @@ export function ChatRoom({room, username}) {
     channel.subscribe('message', async (msg) => {
       let decryptedText = msg.data.text;
 
-      try {
-        decryptedText = await decryptMessage(msg.data.text, privateKeyRef.current);
-      } catch (e) {
-        decryptedText = 'Failed to decrypt';
-      }
+      // try {
+      //   decryptedText = await decryptMessage(msg.data.text, privateKeyRef.current);
+      // } catch (e) {
+      //   decryptedText = 'Failed to decrypt';
+      // }
 
       setMessages((prev) => [...prev, {
         ...msg.data,
@@ -88,32 +89,21 @@ export function ChatRoom({room, username}) {
     if (!input.trim()) return;
 
     try {
-      console.log('Starting to encrypt and send message...');
-      
-      // Double-check we have the public key
       if (!otherPublicKeyRef.current) {
         throw new Error('No public key available for encryption');
       }
-      
-      // Encrypt the message with the other user's public key
-      console.log('About to encrypt:', input.trim(), otherPublicKeyRef.current);
-      const encryptedText = await encryptMessage(input.trim(), otherPublicKeyRef.current);
-
-      console.log(encryptedText);
-      
-      // Double-check we have the channel
       if (!channelRef.current) {
         throw new Error('No channel available for sending');
       }
+      const encryptedText = await encryptMessage(input.trim(), otherPublicKeyRef.current);
       
-      // Send encrypted message via Ably
       await channelRef.current.publish('message', {
         username: username,
         text: encryptedText,
+        length: input.trim().length,
         timestamp: Date.now()
       });
 
-      console.log('Encrypted message sent successfully!');
       setInput('');
     } catch (error) {
       console.error('Error sending encrypted message:', error);
@@ -130,26 +120,14 @@ export function ChatRoom({room, username}) {
         </Button>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50 rounded">
-        {messages.map((msg, idx) => {
-          const isMe = msg.username === username;
-          return (
-            <div
-              key={idx}
-              className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`px-4 py-2 rounded-lg max-w-xs break-words ${
-                  isMe
-                    ? 'bg-blue-500 text-white rounded-br-none'
-                    : 'bg-gray-200 text-gray-900 rounded-bl-none'
-                }`}
-              >
-                <div className="text-xs font-semibold mb-1">{msg.user}</div>
-                <div>{msg.text}</div>
-              </div>
-            </div>
-          );
-        })}
+        {messages.map((msg, idx) => (
+          <MessageBubble
+            key={idx}
+            message={msg}
+            isOwn={msg.username === username}
+            onDecrypt={encryptedText => decryptMessage(encryptedText, privateKeyRef.current)}
+          />
+        ))}
         <div ref={messagesEndRef} />
       </div>
       
