@@ -4,23 +4,53 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AblyClient from '@/lib/ably';
 import { Button } from "@/components/ui/button";
+import { encryptMessage, decryptMessage, getPrivateKey } from '@/lib/encryption';
 
-export function ChatRoom({ room, username}) {
+export function ChatRoom({room, username}) {
   const router = useRouter();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [canSend, setCanSend] = useState(false);
-  const [chatEnded, setChatEnded] = useState(false);
+
   const channelRef = useRef(null);
+  const ablyRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const privateKeyRef = useRef(null);
+  const otherPublicKeyRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }
 
   useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+
+  useEffect(() => {
+    const privateKey = getPrivateKey(room.id, room.password);
+    privateKeyRef.current = privateKey;
+
+    const otherPublicKey = room.guest_key;
+    otherPublicKeyRef.current = otherPublicKey;
+
     const ably = AblyClient.getInstance(username);
+    ablyRef.current = ably;
     const channel = ably.channels.get(`room-${room.id}`);
     channelRef.current = channel;
 
-    channel.subscribe('message', (msg) => {
-      setMessages((prev) => [...prev, msg.data]);
+    channel.subscribe('message', async (msg) => {
+      let decryptedText = msg.data.text;
+
+      try {
+        decryptedText = await decryptMessage(msg.data.text, privateKeyRef.current);
+      } catch (e) {
+        decryptedText = 'Failed to decrypt';
+      }
+
+      setMessages((prev) => [...prev, {
+        ...msg.data,
+        text: decryptedText
+      }]);
     });
 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -38,7 +68,9 @@ export function ChatRoom({ room, username}) {
     try {
       if (channelRef.current) {
         channelRef.current.unsubscribe();
-        channelRef.current = null;
+      }
+      if (ablyRef.current) {
+        ablyRef.current.close();
       }
     } catch (error) {
       console.error('Error during cleanup:', error);
@@ -54,13 +86,39 @@ export function ChatRoom({ room, username}) {
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
-    const message = {
-      user: username,
-      text: input,
-      timestamp: Date.now(),
-    };
-    await channelRef.current.publish('message', message);
-    setInput('');
+
+    try {
+      console.log('Starting to encrypt and send message...');
+      
+      // Double-check we have the public key
+      if (!otherPublicKeyRef.current) {
+        throw new Error('No public key available for encryption');
+      }
+      
+      // Encrypt the message with the other user's public key
+      console.log('About to encrypt:', input.trim(), otherPublicKeyRef.current);
+      const encryptedText = await encryptMessage(input.trim(), otherPublicKeyRef.current);
+
+      console.log(encryptedText);
+      
+      // Double-check we have the channel
+      if (!channelRef.current) {
+        throw new Error('No channel available for sending');
+      }
+      
+      // Send encrypted message via Ably
+      await channelRef.current.publish('message', {
+        username: username,
+        text: encryptedText,
+        timestamp: Date.now()
+      });
+
+      console.log('Encrypted message sent successfully!');
+      setInput('');
+    } catch (error) {
+      console.error('Error sending encrypted message:', error);
+      alert('Failed to send message: ' + error.message);
+    }
   };
 
   return (
@@ -73,7 +131,7 @@ export function ChatRoom({ room, username}) {
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50 rounded">
         {messages.map((msg, idx) => {
-          const isMe = msg.user === username;
+          const isMe = msg.username === username;
           return (
             <div
               key={idx}
@@ -94,12 +152,6 @@ export function ChatRoom({ room, username}) {
         })}
         <div ref={messagesEndRef} />
       </div>
-      
-      {!canSend && (
-        <div className="text-center text-gray-500 my-4">
-          Waiting for your partner...
-        </div>
-      )}
       
       <form
         onSubmit={sendMessage}

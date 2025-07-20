@@ -11,7 +11,7 @@ export async function POST(req) {
   if (!allowed) {
     return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   }
-  const { roomName, creatorName, description, password } = body;
+  const { roomName, creatorName, description, password, creatorKey } = body;
 
   const { data, error } = await supabase
     .from('rooms')
@@ -22,6 +22,8 @@ export async function POST(req) {
       password,
       is_active: true,
       is_locked: false,
+      creator_key: creatorKey,
+      guest_key: null
     })
     .select();
 

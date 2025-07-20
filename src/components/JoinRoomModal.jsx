@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { supabase } from '@/lib/supabase';
+import { generateKeyPair, storePrivateKey } from '@/lib/encryption';
 
 export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
   const router = useRouter();
@@ -36,6 +37,11 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
     e.preventDefault();
     setError('');
 
+    if (!username.trim()) {
+      setError('Please enter a username');
+      return;
+    }
+
     if (!password.trim()) {
       setError('Please enter the password');
       return;
@@ -51,17 +57,24 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
         });
   
       if (error) throw error;
+
+      const { publicKey, privateKey } = await generateKeyPair();
   
       if (data) {
         await supabase
         .from('rooms')
-        .update({ is_locked: true })
+        .update({
+          is_locked: true,
+          guest_key: publicKey
+        })
         .eq('id', room.id);
 
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('chat_username', username);
           localStorage.setItem('chat_username', username);
         }
+
+        storePrivateKey(room.id, privateKey, password);
         router.push(`/room/${room.id}`)
         onClose();
       } else {
@@ -105,7 +118,7 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
 
             <div className="space-y-2">
               <Input
-                type="username"
+                type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter display name"

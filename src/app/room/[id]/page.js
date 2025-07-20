@@ -23,8 +23,8 @@ export default function RoomPage() {
     const fetchRoom = async () => {
       try {
         const { data, error } = await supabase
-          .from('room_info')
-          .select('id, room_name, creator_name')
+          .from('rooms')
+          .select('id, password, room_name, creator_name, guest_key')
           .eq('id', roomId)
           .eq('is_active', true)
           .single();

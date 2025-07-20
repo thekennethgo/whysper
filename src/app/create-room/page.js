@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { generateKeyPair, storePrivateKey } from '@/lib/encryption';
 
 export default function CreateRoom() {
   const router = useRouter();
@@ -41,6 +42,8 @@ export default function CreateRoom() {
 
     setIsLoading(true);
 
+    const { publicKey, privateKey } = await generateKeyPair();
+
     const res = await fetch('/api/create-room', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -49,23 +52,26 @@ export default function CreateRoom() {
         creatorName: formData.creatorName,
         description: formData.description,
         password: formData.password,
+        creatorKey: publicKey
       }),
     });
     
-    const json = await res.json();
+    const data = await res.json();
 
     setIsLoading(false);
 
     if (!res.ok) {
-      setError(json.error || 'Something went wrong');
+      setError(data.error || 'Something went wrong');
       return;
     }
     
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('chat_username', formData.creatorName);
       localStorage.setItem('chat_username', formData.creatorName);
-    }        
-    router.push(`/room/${json.room.id}`);
+    }
+
+    storePrivateKey(data.room.id, privateKey, password);
+    router.push(`/room/${data.room.id}`);
   };
 
   const handleChange = (e) => {
