@@ -64,15 +64,19 @@ export default function JoinRoom() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="border-b px-8 py-4 flex justify-between items-center">
+    <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+          <div className="w-[700px] h-[700px] bg-blue-400/20 dark:bg-blue-400/15 rounded-full blur-[120px]" />
+      </div>
+
+      <div className="border-b px-8 py-4 w-full flex justify-between items-center">
         <h1 className="text-xl font-bold">Join a room</h1>
         <button onClick={() => router.push('/')} className="text-white hover:text-gray-700">
           Return to Home
         </button>
       </div>
 
-      <div className="max-w-xl mx-auto px-4 py-8">
+      <div className="w-full max-w-xl px-4 py-8 flex-1 flex flex-col justify-center items-center relative z-10">
         {error && (
           <div>
             {error}
@@ -84,13 +88,13 @@ export default function JoinRoom() {
           </div>
         ) : rooms.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500 mb-4">No rooms available</p>
+            <p className="text-white-500 mb-4">No rooms available</p>
             <Link href="/create-room">
               <Button>Create a room</Button>
             </Link>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-4 w-full">
             {rooms.map((room) => (
               <Card 
                 key={room.id} 

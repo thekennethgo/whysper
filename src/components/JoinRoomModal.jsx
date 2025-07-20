@@ -96,7 +96,7 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md dark:bg-gray-900">
         <DialogHeader>
           <DialogTitle>{room?.room_name}</DialogTitle>
           <DialogDescription>

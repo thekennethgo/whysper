@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ChatRoom } from '@/components/ChatRoom';
-import { Button } from "@/components/ui/button";
 
 export default function RoomPage() {
   const params = useParams();
@@ -71,6 +70,9 @@ export default function RoomPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 flex flex-col">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+          <div className="w-[700px] h-[700px] bg-blue-400/20 dark:bg-blue-900/15 rounded-full blur-[120px]" />
+      </div>
       <ChatRoom room={room} username={username}/>
     </div>
   );
