@@ -65,9 +65,9 @@ export default function JoinRoom() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="bg-white border-b px-8 py-4 flex justify-between items-center">
+      <div className="border-b px-8 py-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">Join a room</h1>
-        <button onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-700">
+        <button onClick={() => router.push('/')} className="text-white hover:text-gray-700">
           Return to Home
         </button>
       </div>

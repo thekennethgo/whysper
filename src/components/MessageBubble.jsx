@@ -51,7 +51,7 @@ export default function MessageBubble({ message, isOwn, onDecrypt }) {
           setIsDecrypting(false);
         }
       }
-      setTimeout(revealNext, 100);
+      setTimeout(revealNext, 50);
     } catch (e) {
       setError('Failed to decrypt');
       setIsDecrypting(false);
@@ -64,7 +64,7 @@ export default function MessageBubble({ message, isOwn, onDecrypt }) {
         className={`px-4 py-2 rounded-lg max-w-xs break-words cursor-pointer transition-all duration-300 ${
           isOwn
             ? 'bg-blue-500 text-white rounded-br-none'
-            : 'bg-gray-200 text-gray-900 rounded-bl-none'
+            : 'bg-gray-800 text-white rounded-bl-none'
         }`}
         onClick={handleDecrypt}
         tabIndex={0}

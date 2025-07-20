@@ -70,7 +70,7 @@ export default function RoomPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 flex flex-col">
       <ChatRoom room={room} username={username}/>
     </div>
   );

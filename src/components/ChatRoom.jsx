@@ -41,13 +41,6 @@ export function ChatRoom({room, username}) {
 
     channel.subscribe('message', async (msg) => {
       let decryptedText = msg.data.text;
-
-      // try {
-      //   decryptedText = await decryptMessage(msg.data.text, privateKeyRef.current);
-      // } catch (e) {
-      //   decryptedText = 'Failed to decrypt';
-      // }
-
       setMessages((prev) => [...prev, {
         ...msg.data,
         text: decryptedText
@@ -113,13 +106,13 @@ export function ChatRoom({room, username}) {
 
   return (
     <div className="flex flex-col h-full max-h-[80vh]">
-      <div className="bg-white border-b px-8 py-4 flex justify-between items-center">
+      <div className="border-b px-8 py-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">{room.room_name}</h1>
         <Button onClick={endChat} variant="destructive">
           End Chat
         </Button>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50 rounded">
+      <div className="flex-1 overflow-y-auto p-4 space-y-2 rounded">
         {messages.map((msg, idx) => (
           <MessageBubble
             key={idx}
@@ -133,7 +126,7 @@ export function ChatRoom({room, username}) {
       
       <form
         onSubmit={sendMessage}
-        className="flex items-center gap-2 mt-2 p-2 bg-white rounded"
+        className="flex items-center gap-2 mt-2 p-2 rounded"
       >
         <input
           className="flex-1 border rounded px-3 py-2 focus:outline-none"
@@ -144,7 +137,7 @@ export function ChatRoom({room, username}) {
         />
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600"
         >
           Send
         </button>
