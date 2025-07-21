@@ -50,36 +50,38 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .rpc('verify_room_password', {
-          room_id: room.id,
-          input_password: password
-        });
+      const response = await fetch('/api/verify-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: room.id, inputPassword: password }),
+      });
+      const result = await response.json();
   
-      if (error) throw error;
+      if (!result.success) {
+        setError(result.error || 'Incorrect password');
+        setIsLoading(false);
+        setPassword('');
+        return;
+      }
 
       const { publicKey, privateKey } = await generateKeyPair();
   
-      if (data) {
-        await supabase
-        .from('rooms')
-        .update({
-          is_locked: true,
-          guest_key: publicKey
-        })
-        .eq('id', room.id);
+      await supabase
+      .from('rooms')
+      .update({
+        is_locked: true,
+        guest_key: publicKey
+      })
+      .eq('id', room.id);
 
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('chat_username', username);
-          localStorage.setItem('chat_username', username);
-        }
-
-        storePrivateKey(room.id, privateKey, password);
-        router.push(`/room/${room.id}`)
-        onClose();
-      } else {
-        setError('Incorrect password');
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('chat_username', username);
+        localStorage.setItem('chat_username', username);
       }
+
+      storePrivateKey(room.id, privateKey, password);
+      router.push(`/room/${room.id}`)
+      onClose();
     } catch (error) {
       setError(error.message);
     } finally {

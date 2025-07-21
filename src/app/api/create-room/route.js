@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { rateLimit } from '@/lib/rateLimit';
 import { supabase } from '@/lib/supabase';
+import bcrypt from 'bcryptjs';
 
 export async function POST(req) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
@@ -13,13 +14,15 @@ export async function POST(req) {
   }
   const { roomName, creatorName, description, password, creatorKey } = body;
 
+  const hashedPassword = await bcrypt.hash(password, 10);
+
   const { data, error } = await supabase
     .from('rooms')
     .insert({
       room_name: roomName.trim(),
       creator_name: creatorName.trim(),
       description: description.trim(),
-      password,
+      password: hashedPassword,
       is_active: true,
       is_locked: false,
       creator_key: creatorKey,
