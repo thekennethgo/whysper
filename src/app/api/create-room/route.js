@@ -25,8 +25,8 @@ export async function POST(req) {
       password: hashedPassword,
       is_active: true,
       is_locked: false,
+      guest_name: null,
       creator_key: creatorKey,
-      guest_key: null,
       session_key: null
     })
     .select();

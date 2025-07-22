@@ -10,10 +10,13 @@ import {
 } from '@/lib/encryption';
 import MessageBubble from './MessageBubble';
 
-export function ChatRoom({room, username, aesKey}) {
+export function ChatRoom({room, username, aesKey, onChatEnd}) {
   const router = useRouter();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+
+  const [chatEndedMessage, setChatEndedMessage] = useState(null);
+  const chatHasStarted = useRef(false);
 
   const channelRef = useRef(null);
   const ablyRef = useRef(null);
@@ -27,25 +30,59 @@ export function ChatRoom({room, username, aesKey}) {
     scrollToBottom();
   }, [messages]);
 
-
   useEffect(() => {
     const ably = AblyClient.getInstance(username);
     ablyRef.current = ably;
     const channel = ably.channels.get(`room-${room.id}`);
     channelRef.current = channel;
-  
-    channel.subscribe('message', async (msg) => {
+
+    const presence = channel.presence;
+
+    const endTheChat = () => {
+      if (onChatEnd) onChatEnd(); 
+      setChatEndedMessage("The other user has left. The chat has ended.");
+      if (ablyRef.current) {
+        ablyRef.current.close();
+        AblyClient.close();
+      }
+    };
+
+    const handlePresenceUpdate = async () => {
+        const members = await presence.get();
+        const userCount = members.length;
+
+        if (userCount === 2) {
+          chatHasStarted.current = true;
+        }
+        if (chatHasStarted.current && userCount < 2) {
+          endTheChat();
+        }
+    };
+
+    presence.subscribe(['enter', 'leave', 'absent'], handlePresenceUpdate);
+    presence.enter();
+    handlePresenceUpdate();
+
+    const messageHandler = async (msg) => {
       let ciphertext = msg.data.ciphertext;
       setMessages((prev) => [...prev, {
         ...msg.data,
         text: ciphertext
       }]);
-    });
+    };
+
+    channel.subscribe('message', messageHandler);
   
     return () => {
-      channel.unsubscribe();
+      channel.unsubscribe(messageHandler);
+      presence.unsubscribe(['enter', 'leave', 'absent'], handlePresenceUpdate);
+      try {
+        presence.leave();
+      } catch (e) {
+        console.log("Could not leave presence on unmount, connection may already be closed.");
+      }
     };
-  }, [room.id, aesKey, username]);
+  }, [room.id, aesKey, username, onChatEnd]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -64,12 +101,31 @@ export function ChatRoom({room, username, aesKey}) {
     }
   };
 
-  const endChat = () => {
-    if (channelRef.current) channelRef.current.unsubscribe();
-    if (ablyRef.current) ablyRef.current.close();
-    AblyClient.close();
-    router.push('/');
+  const endChat = async () => {
+    if (onChatEnd) onChatEnd(); 
+
+    if (channelRef.current) {
+      try {
+        await channelRef.current.presence.leave();
+      } catch (error) {
+        console.warn("Could not leave presence cleanly, connection might have been closed already.", error);
+      }
+    }
+    if (ablyRef.current) {
+      ablyRef.current.close()
+      AblyClient.close();
+    }
+    setChatEndedMessage("You have ended the chat");
   };
+
+  if (chatEndedMessage) {
+    return (
+      <div className="flex flex-col w-full h-full items-center justify-center text-center p-8">
+        <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{chatEndedMessage}</h2>
+        <Button onClick={() => router.push('/')}>Return to Home</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full w-full">

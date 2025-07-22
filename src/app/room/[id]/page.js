@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ChatRoom } from '@/components/ChatRoom';
 import PasswordPrompt from '@/components/PasswordPrompt';
@@ -9,13 +10,13 @@ import {
   importPrivateKey,
   importPublicKey,
   generateAESKey,
-  importAESKey,
-  exportAESKey,
   encryptAESKeyWithRSA,
   decryptAESKeyWithRSA,
 } from '@/lib/encryption';
+import { Button } from "@/components/ui/button";
 
 export default function RoomPage({ params }) {
+  const router = useRouter();
   const { id: roomId } = React.use(params);
   const [room, setRoom] = useState(null);
   const [isCreator, setIsCreator] = useState(null);
@@ -23,14 +24,25 @@ export default function RoomPage({ params }) {
   const [loading, setLoading] = useState(true);
 
   const [aesKey, setAesKey] = useState(null);
-  const [privateKey, setPrivateKey] = useState(null);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [accessDenied, setAccessDenied] = useState(false);
 
   let username = '';
   if (typeof window !== 'undefined') {
     username = sessionStorage.getItem('chat_username') || localStorage.getItem('chat_username') || '';
   }
+
+  const deactivateRoom = useCallback(async () => {
+    try {
+      await supabase
+        .from('rooms')
+        .update({ is_active: false })
+        .eq('id', roomId);
+    } catch (error) {
+      console.error("Failed to deactivate room:", error);
+    }
+  }, [roomId]);
 
   useEffect(() => {
     async function checkRole() {
@@ -40,7 +52,7 @@ export default function RoomPage({ params }) {
       }
       const { data: roomData } = await supabase
         .from('rooms')
-        .select('creator_name')
+        .select('creator_name, guest_name, is_active')
         .eq('id', roomId)
         .single();
 
@@ -49,17 +61,29 @@ export default function RoomPage({ params }) {
         setLoading(false);
         return;
       }
-      
-      const creatorCheck = username === roomData.creator_name;
-      setIsCreator(creatorCheck);
 
-      if (!creatorCheck) {
-        setPassword('guest_verified');
+      if (!roomData.is_active) {
+        setPasswordError("This chat has ended.");
+        setAccessDenied(true);
         setLoading(false);
-
-      } else {
-        setLoading(false);
+        return;
       }
+      
+      const isUserTheCreator = username === roomData.creator_name;
+      const isUserTheGuest = username === roomData.guest_name;
+
+      if (!isUserTheCreator && !isUserTheGuest) {
+        setAccessDenied(true);
+        setPasswordError("You are not authorized to enter this room.");
+        setLoading(false);
+        return;
+      }
+      setIsCreator(isUserTheCreator);
+
+      if (isUserTheGuest) {
+        setPassword('guest_verified');
+      }
+      setLoading(false);
     }
     checkRole();
   }, [roomId, username]);
@@ -73,24 +97,15 @@ export default function RoomPage({ params }) {
       setLoading(true);
       const { data: initialRoom } = await supabase
         .from('rooms')
-        .select('*')
+        .select('id, room_name, creator_key, session_key')
         .eq('id', roomId)
         .single();
       setRoom(initialRoom);
       // --- GUEST LOGIC ---
       if (!isCreator) {
-        const storedAesKeyB64 = sessionStorage.getItem(`aesKey_${roomId}`);
-        if (storedAesKeyB64) {
-          console.log("reload");
-          const key = importAESKey(storedAesKeyB64);
-          setAesKey(key);
-        } else if (initialRoom.creator_key && !initialRoom.session_key) {
-          console.log("updated");
-          // First time joining: generate, store, and upload the key.
+        if (initialRoom.creator_key && !initialRoom.session_key) {
           const aes = await generateAESKey();
-          const exportedKeyB64 = exportAESKey(aes);
-          sessionStorage.setItem(`aesKey_${roomId}`, exportedKeyB64);
-          
+
           const creatorPubKey = await importPublicKey(initialRoom.creator_key);
           const encryptedAES = await encryptAESKeyWithRSA(aes, creatorPubKey);
           
@@ -99,14 +114,12 @@ export default function RoomPage({ params }) {
             .update({ session_key: encryptedAES })
             .eq('id', roomId);
           setAesKey(aes);
-          console.log("updated");
         }
         setReady(true);
       }
 
       // --- CREATOR LOGIC ---
       if (isCreator) {
-        console.log("brooo");
         const privateKeyB64 = await getPrivateKey(roomId, password);
         if (!privateKeyB64) {
           setPasswordError('Could not retrieve your private key. Wrong password?');
@@ -116,7 +129,6 @@ export default function RoomPage({ params }) {
         }
 
         const privKey = await importPrivateKey(privateKeyB64);
-        setPrivateKey(privKey);
 
         if (initialRoom.session_key && privKey) {
           console.log("Encrypted AES=" + initialRoom.session_key);
@@ -157,6 +169,22 @@ export default function RoomPage({ params }) {
     };
   }, [roomId, password, isCreator]);
 
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+            <div className="w-[700px] h-[700px] bg-blue-400/20 dark:bg-blue-900/15 rounded-full blur-[120px]" />
+        </div>
+        <div className='flex flex-col justify-center items-center'>
+          <h2 className="text-2xl font-bold text-red-600 mb-2">Access Denied</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-5">{passwordError}</p>
+
+          <Button onClick={() => router.push('/')}>Return to Home</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col items-center justify-center">
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
@@ -195,6 +223,7 @@ export default function RoomPage({ params }) {
             room={room}
             username={username}
             aesKey={aesKey}
+            onChatEnd={deactivateRoom}
           />
       </div>
       )}

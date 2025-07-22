@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { supabase } from '@/lib/supabase';
-import { generateRSAKeyPair, exportPublicKey, exportPrivateKey, storePrivateKey } from '@/lib/encryption';
+import { generateRSAKeyPair, exportPublicKey } from '@/lib/encryption';
 
 export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
   const router = useRouter();
@@ -42,6 +42,11 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
       return;
     }
 
+    if (username === room.creator_name) {
+      setError("Username can't be the same");
+      return;
+    }
+
     if (!password.trim()) {
       setError('Please enter the password');
       return;
@@ -64,13 +69,11 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
         return;
       }
 
-      const rsaKeyPair = await generateRSAKeyPair();
-      const publicKey = await exportPublicKey(rsaKeyPair.publicKey);
       await supabase
       .from('rooms')
       .update({
         is_locked: true,
-        guest_key: publicKey
+        guest_name: username
       })
       .eq('id', room.id);
 
