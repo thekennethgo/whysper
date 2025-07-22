@@ -13,7 +13,10 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "Whysper",
-  description: "End to end encrypted chat app"
+  description: "End to end encrypted chat app",
+  icons: {
+    icon: '/logo.png'
+  }
 };
 
 export default function RootLayout({ children }) {
