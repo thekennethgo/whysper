@@ -1,7 +1,5 @@
-// src/lib/encryption.js
 
 // --- RSA Key Generation, Export, Import ---
-
 export async function generateRSAKeyPair() {
   const keyPair = await window.crypto.subtle.generateKey(
     {
@@ -49,7 +47,6 @@ export async function importPrivateKey(pkcs8B64) {
 }
 
 // --- AES Key Generation, Export, Import ---
-
 export async function generateAESKey() {
   return window.crypto.subtle.generateKey(
     { name: "AES-GCM", length: 256 },
@@ -75,7 +72,6 @@ export async function importAESKey(rawB64) {
 }
 
 // --- Encrypt/Decrypt AES Key with RSA ---
-
 export async function encryptAESKeyWithRSA(aesKey, recipientPublicKey) {
   const rawAES = await window.crypto.subtle.exportKey("raw", aesKey);
   const encrypted = await window.crypto.subtle.encrypt(
@@ -108,7 +104,6 @@ export async function decryptAESKeyWithRSA(encryptedAESB64, myPrivateKey) {
   }
 }
 // --- Encrypt/Decrypt Message with AES-GCM ---
-
 export async function encryptMessageWithAES(plaintext, aesKey) {
   const iv = window.crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV
   const encoder = new TextEncoder();
@@ -133,8 +128,6 @@ export async function decryptMessageWithAES(ciphertextB64, ivB64, aesKey) {
   );
   return new TextDecoder().decode(decrypted);
 }
-
-// ... other imports and functions ...
 
 // Helper: Derive a key from password using PBKDF2
 async function deriveKeyFromPassword(password, salt) {
@@ -201,36 +194,5 @@ export async function getPrivateKey(roomId, password) {
     return new TextDecoder().decode(decrypted); // This is the base64-encoded private key
   } catch (e) {
     return null; // Wrong password or tampered data
-  }
-}
-
-export async function testKeyPair(publicKey, privateKey) {
-  // 1. Generate random data
-  const original = window.crypto.getRandomValues(new Uint8Array(32));
-
-  // 2. Encrypt with public key
-  const encrypted = await window.crypto.subtle.encrypt(
-    { name: "RSA-OAEP" },
-    publicKey,
-    original
-  );
-
-  // 3. Decrypt with private key
-  const decrypted = await window.crypto.subtle.decrypt(
-    { name: "RSA-OAEP" },
-    privateKey,
-    encrypted
-  );
-
-  // 4. Compare
-  const originalStr = Array.from(new Uint8Array(original)).toString();
-  const decryptedStr = Array.from(new Uint8Array(decrypted)).toString();
-
-  if (originalStr === decryptedStr) {
-    console.log("✅ Keys are a matching pair!");
-    return true;
-  } else {
-    console.error("❌ Keys do NOT match!");
-    return false;
   }
 }

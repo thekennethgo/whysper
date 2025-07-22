@@ -131,7 +131,6 @@ export default function RoomPage({ params }) {
         const privKey = await importPrivateKey(privateKeyB64);
 
         if (initialRoom.session_key && privKey) {
-          console.log("Encrypted AES=" + initialRoom.session_key);
           const aes = await decryptAESKeyWithRSA(initialRoom.session_key, privKey);
           setAesKey(aes);
           setReady(true);
@@ -146,7 +145,6 @@ export default function RoomPage({ params }) {
                 const updated = payload.new;
                 setRoom(updated);
                 if (updated.session_key && privKey) {
-                  console.log("SESSION_KEY" + updated.session_key);
                   decryptAESKeyWithRSA(updated.session_key, privKey)
                     .then((aes) => {
                       setAesKey(aes);

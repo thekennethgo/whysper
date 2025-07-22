@@ -45,7 +45,6 @@ export default function CreateRoom() {
     const rsaKeyPair = await generateRSAKeyPair();
     const publicKey = await exportPublicKey(rsaKeyPair.publicKey);
     const privateKey = await exportPrivateKey(rsaKeyPair.privateKey);
-    console.log("public = " + publicKey);
 
     const res = await fetch('/api/create-room', {
       method: 'POST',

@@ -24,7 +24,6 @@ export default function JoinRoom() {
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'rooms' },
         (payload) => {
-          console.log('Room change:', payload);
           if (payload.eventType === 'INSERT') {
             setRooms(prev => [payload.new, ...prev]);
           } else if (payload.eventType === 'DELETE') {
