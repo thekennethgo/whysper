@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { supabase } from '@/lib/supabase';
-import { generateKeyPair, storePrivateKey } from '@/lib/encryption';
+import { generateRSAKeyPair, exportPublicKey, exportPrivateKey, storePrivateKey } from '@/lib/encryption';
 
 export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
   const router = useRouter();
@@ -64,8 +64,8 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
         return;
       }
 
-      const { publicKey, privateKey } = await generateKeyPair();
-  
+      const rsaKeyPair = await generateRSAKeyPair();
+      const publicKey = await exportPublicKey(rsaKeyPair.publicKey);
       await supabase
       .from('rooms')
       .update({
@@ -79,7 +79,6 @@ export function JoinRoomModal({ room, isOpen, onClose, onJoin }) {
         localStorage.setItem('chat_username', username);
       }
 
-      storePrivateKey(room.id, privateKey, password);
       router.push(`/room/${room.id}`)
       onClose();
     } catch (error) {

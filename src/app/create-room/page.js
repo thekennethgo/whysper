@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { generateKeyPair, storePrivateKey } from '@/lib/encryption';
+import { generateRSAKeyPair, exportPublicKey, exportPrivateKey, storePrivateKey } from '@/lib/encryption';
 
 export default function CreateRoom() {
   const router = useRouter();
@@ -42,7 +42,10 @@ export default function CreateRoom() {
 
     setIsLoading(true);
 
-    const { publicKey, privateKey } = await generateKeyPair();
+    const rsaKeyPair = await generateRSAKeyPair();
+    const publicKey = await exportPublicKey(rsaKeyPair.publicKey);
+    const privateKey = await exportPrivateKey(rsaKeyPair.privateKey);
+    console.log("public = " + publicKey);
 
     const res = await fetch('/api/create-room', {
       method: 'POST',
@@ -70,7 +73,7 @@ export default function CreateRoom() {
       localStorage.setItem('chat_username', formData.creatorName);
     }
 
-    storePrivateKey(data.room.id, privateKey, password);
+    await storePrivateKey(data.room.id, privateKey, formData.password);
     router.push(`/room/${data.room.id}`);
   };
 

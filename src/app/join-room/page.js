@@ -48,7 +48,7 @@ export default function JoinRoom() {
       setIsLoading(true);
 
       const { data, error } = await supabase
-        .from('room_info')
+        .from('public_room_info')
         .select('*')
         .eq('is_active', true)
         .eq('is_locked', false)

@@ -1,231 +1,236 @@
-// Simple encryption utilities for our chat app
-// This handles generating keys and encrypting/decrypting messages
+// src/lib/encryption.js
 
-// Helper function to safely convert base64 to Uint8Array
-const base64ToArrayBuffer = (base64) => {
-  try {
-    // Handle base64 with potential invalid characters
-    const binaryString = atob(base64.replace(/[-_]/g, (match) => {
-      return match === '-' ? '+' : '/';
-    }).replace(/\s/g, ''));
-    
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes;
-  } catch (error) {
-    console.error('Error converting base64 to array buffer:', error);
-    throw new Error('Invalid base64 string');
-  }
-};
+// --- RSA Key Generation, Export, Import ---
 
-// Helper function to safely convert Uint8Array to base64
-const arrayBufferToBase64 = (buffer) => {
-  try {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-  } catch (error) {
-    console.error('Error converting array buffer to base64:', error);
-    throw new Error('Error encoding to base64');
-  }
-};
+export async function generateRSAKeyPair() {
+  const keyPair = await window.crypto.subtle.generateKey(
+    {
+      name: "RSA-OAEP",
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: "SHA-256",
+    },
+    true,
+    ["encrypt", "decrypt"]
+  );
+  return keyPair;
+}
 
-// Generate a new key pair for a user
-export const generateKeyPair = async () => {
+export async function exportPublicKey(key) {
+  const spki = await window.crypto.subtle.exportKey("spki", key);
+  return btoa(String.fromCharCode(...new Uint8Array(spki)));
+}
+
+export async function importPublicKey(spkiB64) {
+  const spki = Uint8Array.from(atob(spkiB64), c => c.charCodeAt(0));
+  return window.crypto.subtle.importKey(
+    "spki",
+    spki,
+    { name: "RSA-OAEP", hash: "SHA-256" },
+    true,
+    ["encrypt"]
+  );
+}
+
+export async function exportPrivateKey(key) {
+  const pkcs8 = await window.crypto.subtle.exportKey("pkcs8", key);
+  return btoa(String.fromCharCode(...new Uint8Array(pkcs8)));
+}
+
+export async function importPrivateKey(pkcs8B64) {
+  const pkcs8 = Uint8Array.from(atob(pkcs8B64), c => c.charCodeAt(0));
+  return window.crypto.subtle.importKey(
+    "pkcs8",
+    pkcs8,
+    { name: "RSA-OAEP", hash: "SHA-256" },
+    true,
+    ["decrypt"]
+  );
+}
+
+// --- AES Key Generation, Export, Import ---
+
+export async function generateAESKey() {
+  return window.crypto.subtle.generateKey(
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  );
+}
+
+export async function exportAESKey(key) {
+  const raw = await window.crypto.subtle.exportKey("raw", key);
+  return btoa(String.fromCharCode(...new Uint8Array(raw)));
+}
+
+export async function importAESKey(rawB64) {
+  const raw = Uint8Array.from(atob(rawB64), c => c.charCodeAt(0));
+  return window.crypto.subtle.importKey(
+    "raw",
+    raw,
+    { name: "AES-GCM" },
+    true,
+    ["encrypt", "decrypt"]
+  );
+}
+
+// --- Encrypt/Decrypt AES Key with RSA ---
+
+export async function encryptAESKeyWithRSA(aesKey, recipientPublicKey) {
+  const rawAES = await window.crypto.subtle.exportKey("raw", aesKey);
+  const encrypted = await window.crypto.subtle.encrypt(
+    { name: "RSA-OAEP" },
+    recipientPublicKey,
+    rawAES
+  );
+  return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
+}
+
+export async function decryptAESKeyWithRSA(encryptedAESB64, myPrivateKey) {
   try {
-    console.log('Generating new key pair...');
-    
-    // Create a new RSA key pair using the browser's crypto API
-    const keyPair = await window.crypto.subtle.generateKey(
-      {
-        name: "RSA-OAEP",
-        modulusLength: 2048,  // Key size - 2048 bits is standard
-        publicExponent: new Uint8Array([1, 0, 1]),  // Standard exponent
-        hash: "SHA-256",  // Hash function to use
-      },
-      true,  // Extractable - we need to export the keys
-      ["encrypt", "decrypt"]  // What we can do with these keys
+    const encrypted = Uint8Array.from(atob(encryptedAESB64), c => c.charCodeAt(0));
+    const rawAES = await window.crypto.subtle.decrypt(
+      { name: "RSA-OAEP" },
+      myPrivateKey,
+      encrypted
     );
 
-    console.log('Key pair generated successfully!');
-
-    // Export the public key so we can share it
-    const publicKeyBuffer = await window.crypto.subtle.exportKey(
-      "spki",  // Standard format for public keys
-      keyPair.publicKey
+    return window.crypto.subtle.importKey(
+      "raw",
+      rawAES,
+      { name: "AES-GCM" },
+      true,
+      ["encrypt", "decrypt"]
     );
-    
-    // Convert to base64 string so we can store it easily
-    const publicKeyString = arrayBufferToBase64(publicKeyBuffer);
-
-    // Export the private key (we'll keep this secret)
-    const privateKeyBuffer = await window.crypto.subtle.exportKey(
-      "pkcs8",  // Standard format for private keys
-      keyPair.privateKey
-    );
-    
-    // Convert to base64 string
-    const privateKeyString = arrayBufferToBase64(privateKeyBuffer);
-
-    return {
-      publicKey: publicKeyString,   // Share this with others
-      privateKey: privateKeyString, // Keep this secret!
-      keyPair: keyPair              // Keep the original key pair for later use
-    };
-  } catch (error) {
-    console.error('Oops! Error generating keys:', error);
-    throw error;
+  } catch (err) {
+    console.error("Failed to decrypt AES key with RSA:", err);
+    throw err;
   }
-};
+}
+// --- Encrypt/Decrypt Message with AES-GCM ---
 
-// Encrypt a message using someone's public key
-export const encryptMessage = async (message, publicKeyString) => {
+export async function encryptMessageWithAES(plaintext, aesKey) {
+  const iv = window.crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV
+  const encoder = new TextEncoder();
+  const ciphertext = await window.crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    aesKey,
+    encoder.encode(plaintext)
+  );
+  return {
+    ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
+    iv: btoa(String.fromCharCode(...iv)),
+  };
+}
+
+export async function decryptMessageWithAES(ciphertextB64, ivB64, aesKey) {
+  const ciphertext = Uint8Array.from(atob(ciphertextB64), c => c.charCodeAt(0));
+  const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
+  const decrypted = await window.crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    aesKey,
+    ciphertext
+  );
+  return new TextDecoder().decode(decrypted);
+}
+
+// ... other imports and functions ...
+
+// Helper: Derive a key from password using PBKDF2
+async function deriveKeyFromPassword(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await window.crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
+  );
+  return window.crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt,
+      iterations: 100_000,
+      hash: "SHA-256"
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  );
+}
+
+// Store private key in localStorage, encrypted with password
+export async function storePrivateKey(roomId, privateKeyB64, password) {
+  const enc = new TextEncoder();
+  const salt = window.crypto.getRandomValues(new Uint8Array(16));
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKeyFromPassword(password, salt);
+
+  const ciphertext = await window.crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    enc.encode(privateKeyB64)
+  );
+
+  // Store as JSON string: { salt, iv, ciphertext }
+  const data = {
+    salt: btoa(String.fromCharCode(...salt)),
+    iv: btoa(String.fromCharCode(...iv)),
+    ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext)))
+  };
+  localStorage.setItem(`privateKey_${roomId}`, JSON.stringify(data));
+}
+
+// Retrieve and decrypt private key from localStorage
+export async function getPrivateKey(roomId, password) {
+  const dataStr = localStorage.getItem(`privateKey_${roomId}`);
+  if (!dataStr) return null;
+  const data = JSON.parse(dataStr);
+  const salt = Uint8Array.from(atob(data.salt), c => c.charCodeAt(0));
+  const iv = Uint8Array.from(atob(data.iv), c => c.charCodeAt(0));
+  const ciphertext = Uint8Array.from(atob(data.ciphertext), c => c.charCodeAt(0));
+  const key = await deriveKeyFromPassword(password, salt);
+
   try {
-    console.log('Encrypting message...');
-    
-    // Convert the base64 public key back to a format the browser can use
-    const publicKeyBuffer = base64ToArrayBuffer(publicKeyString);
-    
-    // Import the public key
-    const publicKey = await window.crypto.subtle.importKey(
-      "spki",  // It's a public key
-      publicKeyBuffer,
-      {
-        name: "RSA-OAEP",
-        hash: "SHA-256",
-      },
-      false,  // Not extractable
-      ["encrypt"]  // We can only encrypt with public keys
+    const decrypted = await window.crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      key,
+      ciphertext
     );
-
-    // Convert our message to bytes
-    const messageBytes = new TextEncoder().encode(message);
-    
-    // Encrypt the message
-    const encryptedBytes = await window.crypto.subtle.encrypt(
-      {
-        name: "RSA-OAEP"
-      },
-      publicKey,
-      messageBytes
-    );
-
-    // Convert the encrypted bytes to a string we can send
-    const encryptedString = arrayBufferToBase64(encryptedBytes);
-    
-    console.log('Message encrypted successfully!');
-    return encryptedString;
-  } catch (error) {
-    console.error('Oops! Error encrypting message:', error);
-    throw error;
+    return new TextDecoder().decode(decrypted); // This is the base64-encoded private key
+  } catch (e) {
+    return null; // Wrong password or tampered data
   }
-};
+}
 
-// Decrypt a message using our private key
-export const decryptMessage = async (encryptedMessage, privateKeyString) => {
-  try {
-    console.log('Decrypting message...');
-    
-    // Convert the base64 private key back to a format the browser can use
-    const privateKeyBuffer = base64ToArrayBuffer(privateKeyString);
-    
-    // Import the private key
-    const privateKey = await window.crypto.subtle.importKey(
-      "pkcs8",  // It's a private key
-      privateKeyBuffer,
-      {
-        name: "RSA-OAEP",
-        hash: "SHA-256",
-      },
-      false,  // Not extractable
-      ["decrypt"]  // We can only decrypt with private keys
-    );
+export async function testKeyPair(publicKey, privateKey) {
+  // 1. Generate random data
+  const original = window.crypto.getRandomValues(new Uint8Array(32));
 
-    // Convert the encrypted string back to bytes
-    const encryptedBytes = base64ToArrayBuffer(encryptedMessage);
-    
-    // Decrypt the message
-    const decryptedBytes = await window.crypto.subtle.decrypt(
-      {
-        name: "RSA-OAEP"
-      },
-      privateKey,
-      encryptedBytes
-    );
+  // 2. Encrypt with public key
+  const encrypted = await window.crypto.subtle.encrypt(
+    { name: "RSA-OAEP" },
+    publicKey,
+    original
+  );
 
-    // Convert the decrypted bytes back to text
-    const decryptedMessage = new TextDecoder().decode(decryptedBytes);
-    
-    console.log('Message decrypted successfully!');
-    return decryptedMessage;
-  } catch (error) {
-    console.error('Oops! Error decrypting message:', error);
-    throw error;
+  // 3. Decrypt with private key
+  const decrypted = await window.crypto.subtle.decrypt(
+    { name: "RSA-OAEP" },
+    privateKey,
+    encrypted
+  );
+
+  // 4. Compare
+  const originalStr = Array.from(new Uint8Array(original)).toString();
+  const decryptedStr = Array.from(new Uint8Array(decrypted)).toString();
+
+  if (originalStr === decryptedStr) {
+    console.log("✅ Keys are a matching pair!");
+    return true;
+  } else {
+    console.error("❌ Keys do NOT match!");
+    return false;
   }
-};
-
-// Save our private key in the browser's storage
-// We encrypt it with the room password so it's not just sitting there
-export const storePrivateKey = (roomId, privateKey, roomPassword) => {
-  try {
-    console.log('Storing private key for room:', roomId);
-    
-    // Simple way to "encrypt" the private key with the room password
-    // In a real app, you'd use a proper encryption library
-    const encryptedKey = btoa(privateKey + roomPassword);
-    
-    // Save it in the browser's local storage
-    localStorage.setItem(`private_key_${roomId}`, encryptedKey);
-    
-    console.log('Private key stored successfully!');
-  } catch (error) {
-    console.error('Oops! Error storing private key:', error);
-    throw error;
-  }
-};
-
-// Get our private key from browser storage
-export const getPrivateKey = (roomId, roomPassword) => {
-  try {
-    console.log('Getting private key for room:', roomId);
-    
-    // Get the encrypted key from storage
-    const encryptedKey = localStorage.getItem(`private_key_${roomId}`);
-    
-    if (!encryptedKey) {
-      console.log('No private key found for this room');
-      return null;
-    }
-    
-    // "Decrypt" it by removing the room password
-    const privateKey = atob(encryptedKey).replace(roomPassword, '');
-    
-    console.log('Private key retrieved successfully!');
-    return privateKey;
-  } catch (error) {
-    console.error('Oops! Error getting private key:', error);
-    return null;
-  }
-};
-
-// Helper function to check if we have a private key for a room
-export const hasPrivateKey = (roomId) => {
-  const key = localStorage.getItem(`private_key_${roomId}`);
-  return key !== null;
-};
-
-// Helper function to remove a private key (when leaving a room)
-export const removePrivateKey = (roomId) => {
-  try {
-    console.log('Removing private key for room:', roomId);
-    localStorage.removeItem(`private_key_${roomId}`);
-    console.log('Private key removed successfully!');
-  } catch (error) {
-    console.error('Oops! Error removing private key:', error);
-  }
-};
+}

@@ -7,7 +7,7 @@ export async function POST(req) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
   const body = await req.json();
 
-  const allowed = await rateLimit(ip, 'create-room', 10, 3600);
+  const allowed = await rateLimit(ip, 'create-room', 20, 3600);
 
   if (!allowed) {
     return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
@@ -26,7 +26,8 @@ export async function POST(req) {
       is_active: true,
       is_locked: false,
       creator_key: creatorKey,
-      guest_key: null
+      guest_key: null,
+      session_key: null
     })
     .select();
 
