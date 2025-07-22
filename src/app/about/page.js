@@ -31,7 +31,7 @@ export default function About() {
             </CardHeader>
             <CardContent>
               <p>
-                Every message sent on Whysper is protected by a combination of RSA and AES encryption. This means your messages are encrypted on your device and can only be decrypted by the person you're talking to. Servers and network only ever see random ciphertext.
+                Every message sent on Whysper is protected by a combination of RSA and AES encryption. This means your messages are encrypted on your device and can only be decrypted by the person you are talking to. Servers and network only ever see random ciphertext.
               </p>
             </CardContent>
           </Card>
@@ -45,7 +45,7 @@ export default function About() {
             </CardHeader>
             <CardContent>
               <p className="mb-4">
-                After a guest joins the room, both users participate in a secure key exchange process to establish a shared encryption key. This key is used to encrypt and decrypt all messages in the chat. Only the two users know this key, and it's never exposed to the server or any third party.
+                After a guest joins the room, both users participate in a secure key exchange process to establish a shared encryption key. This key is used to encrypt and decrypt all messages in the chat. Only the two users know this key, and its never exposed to the server or any third party.
               </p>
             </CardContent>
           </Card>
@@ -58,7 +58,7 @@ export default function About() {
             </CardHeader>
             <CardContent>
               <p className="mb-4"> For a service to be truly secure, it must be completely transparent. </p>
-              <p> That's why every line of code is available in this GitHub repo. </p>
+              <p> That is why every line of code is available in this GitHub repo. </p>
               <div className="mt-4">
                 <Link href="https://github.com/thekennethgo/whysper" target="_blank" rel="noopener noreferrer">
                   <Button variant="outline">
