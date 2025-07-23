@@ -216,7 +216,7 @@ export default function RoomPage({ params }) {
       )}
 
       {ready && aesKey && room && (
-        <div className="w-full max-w-4xl min-h-[100px] bg-white/80 dark:bg-gray-800/70 backdrop-blur-md rounded-lg shadow-xl flex">
+        <div className="w-full h-screen md:h-[calc(100vh-2rem)] max-w-4xl bg-white/80 dark:bg-gray-800/70 backdrop-blur-md md:rounded-2xl shadow-xl flex flex-col overflow-hidden">
           <ChatRoom
             room={room}
             username={username}

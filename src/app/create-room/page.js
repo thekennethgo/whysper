@@ -90,15 +90,15 @@ export default function CreateRoom() {
           <div className="w-[700px] h-[700px] bg-blue-400/20 dark:bg-blue-900/15 rounded-full blur-[120px]" />
       </div>
 
-      <div className="border-b px-8 py-4 w-full flex justify-between items-center">
-        <h1 className="text-xl font-bold">Create a Private Room</h1>
-        <button onClick={() => router.push('/')} className="text-white hover:text-gray-700">
+      <header className="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-8 py-3 w-full flex justify-between items-center shrink-0 z-10">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Create a Private Room</h1>
+        <Button onClick={() => router.push('/')} variant="ghost">
           Return to Home
-        </button>
-      </div>
+        </Button>
+      </header>
 
-      <div className="w-full max-w-2xl mx-auto px-4 py-8">
-        <Card>
+      <main className="flex-grow w-full flex items-center justify-center p-4">
+        <Card className="w-full max-w-xl bg-white/60 dark:bg-gray-800/50 backdrop-blur-sm border-0 shadow-xl">
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
@@ -162,7 +162,7 @@ export default function CreateRoom() {
             </form>
           </CardContent>
         </Card>
-      </div>
+      </main>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 
 export default function Home() {
   return (
-    <div className="min-h-screen max-w-screen flex flex-col justify-center items-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
         <div className="w-[700px] h-[700px] bg-blue-400/20 dark:bg-blue-400/15 rounded-full blur-[120px]" />
       </div>
@@ -17,7 +17,7 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 w-2xl mx-auto">
+      <div className="w-full lg:w-4/5 mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Link href="/create-room">
           <Card className="hover:scale-105 hover:shadow-2xl transition-all cursor-pointer bg-white/80 dark:bg-gray-800/70 backdrop-blur border-0">
             <CardHeader>
@@ -64,6 +64,6 @@ export default function Home() {
           </Card>
         </Link>
       </div>
-    </div>
+    </main>
   );
 }

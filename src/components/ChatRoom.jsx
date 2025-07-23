@@ -128,8 +128,8 @@ export function ChatRoom({room, username, aesKey, onChatEnd}) {
 
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="border-b px-8 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">{room.room_name}</h1>
+      <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-6 flex justify-between items-center shrink-0">
+        <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate pr-4">{room.room_name}</h1>
         <Button onClick={endChat} variant="destructive">
           End Chat
         </Button>
@@ -149,25 +149,27 @@ export function ChatRoom({room, username, aesKey, onChatEnd}) {
         ))}
         <div ref={messagesEndRef} />
       </div>
-      
-      <form
-        onSubmit={sendMessage}
-        className="flex items-center gap-2 mt-2 p-2 rounded"
-      >
-        <input
-          className="flex-1 border rounded px-3 py-2 focus:outline-none"
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your message…"
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600"
+
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <form
+          onSubmit={sendMessage}
+          className="flex items-center gap-2 mt-2 p-2 rounded"
         >
-          Send
-        </button>
-      </form>
+          <input
+            className="flex-1 border rounded px-3 py-2 focus:outline-none"
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type your message…"
+          />
+          <button
+            type="submit"
+            className="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Send
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
