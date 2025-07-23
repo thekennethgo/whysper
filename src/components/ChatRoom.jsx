@@ -75,11 +75,10 @@ export function ChatRoom({room, username, aesKey, onChatEnd}) {
     return () => {
       channel.unsubscribe(messageHandler);
       presence.unsubscribe(['enter', 'leave', 'absent'], handlePresenceUpdate);
-      try {
-        presence.leave();
-      } catch (e) {
-        console.log("Could not leave presence on unmount, connection may already be closed.");
-      }
+      
+      presence.leave().catch((err) => {
+        console.warn("Could not leave presence on unmount (this is often expected):", err);
+      });
     };
   }, [room.id, aesKey, username, onChatEnd]);
 
