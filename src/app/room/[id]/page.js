@@ -33,14 +33,14 @@ export default function RoomPage({ params }) {
     username = sessionStorage.getItem('chat_username') || localStorage.getItem('chat_username') || '';
   }
 
-  const deactivateRoom = useCallback(async () => {
+  const deleteRoom = useCallback(async () => {
     try {
       await supabase
         .from('rooms')
-        .update({ is_active: false })
+        .delete()
         .eq('id', roomId);
     } catch (error) {
-      console.error("Failed to deactivate room:", error);
+      console.error("Failed to delete room:", error);
     }
   }, [roomId]);
 
@@ -52,18 +52,12 @@ export default function RoomPage({ params }) {
       }
       const { data: roomData } = await supabase
         .from('rooms')
-        .select('creator_name, guest_name, is_active')
+        .select('creator_name, guest_name')
         .eq('id', roomId)
         .single();
 
       if (!roomData) {
         setPasswordError("This room does not exist.");
-        setLoading(false);
-        return;
-      }
-
-      if (!roomData.is_active) {
-        setPasswordError("This chat has ended.");
         setAccessDenied(true);
         setLoading(false);
         return;
@@ -216,12 +210,12 @@ export default function RoomPage({ params }) {
       )}
 
       {ready && aesKey && room && (
-        <div className="w-full h-screen md:h-[calc(100vh-2rem)] max-w-4xl bg-white/80 dark:bg-gray-800/70 backdrop-blur-md md:rounded-2xl shadow-xl flex flex-col overflow-hidden">
+        <div className="w-full h-dvh md:h-[calc(100dvh-2rem)] max-w-4xl bg-white/80 dark:bg-gray-800/70 backdrop-blur-md md:rounded-2xl shadow-xl flex flex-col overflow-hidden">
           <ChatRoom
             room={room}
             username={username}
             aesKey={aesKey}
-            onChatEnd={deactivateRoom}
+            onChatEnd={deleteRoom}
           />
       </div>
       )}

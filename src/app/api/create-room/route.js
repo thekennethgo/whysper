@@ -23,7 +23,6 @@ export async function POST(req) {
       creator_name: creatorName.trim(),
       description: description.trim(),
       password: hashedPassword,
-      is_active: true,
       is_locked: false,
       guest_name: null,
       creator_key: creatorKey,

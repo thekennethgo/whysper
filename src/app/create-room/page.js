@@ -63,7 +63,7 @@ export default function CreateRoom() {
     setIsLoading(false);
 
     if (!res.ok) {
-      setError(data.error || 'Something went wrong');
+      setError('Room name has been used');
       return;
     }
     

@@ -49,7 +49,6 @@ export default function JoinRoom() {
       const { data, error } = await supabase
         .from('public_room_info')
         .select('*')
-        .eq('is_active', true)
         .eq('is_locked', false)
         .order('created_at', { ascending: false });
 
